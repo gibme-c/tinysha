@@ -275,9 +275,9 @@ namespace tinysha
     do                                                          \
     {                                                           \
         uint64x2_t wk = vaddq_u64(W[wi], vld1q_u64(&K512[ki])); \
-        gh = vaddq_u64(gh, wk);                                 \
         uint64x2_t t0 = vextq_u64(ef, gh, 1);                   \
         uint64x2_t t1 = vextq_u64(cd, ef, 1);                   \
+        gh = vaddq_u64(gh, wk);                                 \
         gh = vsha512hq_u64(gh, t0, t1);                         \
         uint64x2_t t2 = vextq_u64(ab, cd, 1);                   \
         gh = vsha512h2q_u64(gh, ab, t2);                        \
