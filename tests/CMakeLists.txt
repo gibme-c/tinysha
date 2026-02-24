@@ -30,9 +30,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         set_property(TARGET tinysha_tests APPEND_STRING PROPERTY LINK_FLAGS
             " -Wl,-z,relro,-z,now -Wl,-z,noexecstack")
     endif()
-    if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-        set_property(TARGET tinysha_tests APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-bind_at_load")
-    endif()
+    # macOS: -bind_at_load is deprecated on modern macOS (eager binding is the default)
     if(MINGW)
         set_property(TARGET tinysha_tests APPEND_STRING PROPERTY LINK_FLAGS
             " -Wl,--nxcompat -Wl,--dynamicbase -Wl,--high-entropy-va")
