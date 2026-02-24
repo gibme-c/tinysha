@@ -270,17 +270,24 @@ namespace tinysha
             // After sha512h + sha512h2, the result (new AB) lands in what was GH,
             // then we rotate: old AB→CD, old CD→EF, old EF→GH.
 
-// Two rounds: compute new AB into 'gh', then rotate register aliases
-#define SHA512_2ROUNDS(ab, cd, ef, gh, wi, ki)                  \
-    do                                                          \
-    {                                                           \
-        uint64x2_t wk = vaddq_u64(W[wi], vld1q_u64(&K512[ki])); \
-        uint64x2_t t0 = vextq_u64(ef, gh, 1);                   \
-        uint64x2_t t1 = vextq_u64(cd, ef, 1);                   \
-        gh = vaddq_u64(gh, wk);                                 \
-        gh = vsha512hq_u64(gh, t0, t1);                         \
-        uint64x2_t t2 = vextq_u64(ab, cd, 1);                   \
-        gh = vsha512h2q_u64(gh, ab, t2);                        \
+// Two rounds: compute new AB into 'gh', then rotate register aliases.
+// Following the canonical Linux kernel / BouncyCastle pattern:
+//   1. Swap W+K halves (align h-word with high lane where h lives in gh)
+//   2. Add swapped W+K into gh to form the initial sum for sha512h
+//   3. Extract cross-lane state pairs fg, de from ORIGINAL state
+//   4. sha512h produces intermediate; sha512h2 produces new AB
+//   5. cd += intermed to propagate the Sigma1+Ch contribution (new EF after rotation)
+#define SHA512_2ROUNDS(ab, cd, ef, gh, wi, ki)                         \
+    do                                                                  \
+    {                                                                   \
+        uint64x2_t wk = vaddq_u64(W[wi], vld1q_u64(&K512[ki]));        \
+        wk = vextq_u64(wk, wk, 1);                                     \
+        uint64x2_t fg = vextq_u64(ef, gh, 1);                          \
+        uint64x2_t de = vextq_u64(cd, ef, 1);                          \
+        uint64x2_t sum = vaddq_u64(wk, gh);                            \
+        uint64x2_t intermed = vsha512hq_u64(sum, fg, de);              \
+        gh = vsha512h2q_u64(intermed, cd, ab);                         \
+        cd = vaddq_u64(cd, intermed);                                  \
     } while (0)
 
 // Two rounds + message schedule update
