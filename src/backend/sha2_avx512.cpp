@@ -46,6 +46,11 @@ namespace tinysha
 
 #if defined(__AVX512F__) || (defined(_MSC_VER) && !defined(__clang__))
 
+        static inline uint32_t rotr32_512(uint32_t x, int n)
+        {
+            return (x >> n) | (x << (32 - n));
+        }
+
         static constexpr uint32_t K256_512[64] = {
             0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
             0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
@@ -107,21 +112,21 @@ namespace tinysha
             {
                 uint32_t w15 = W[i - 15];
                 uint32_t w2 = W[i - 2];
-                uint32_t s0 = _rotr(w15, 7) ^ _rotr(w15, 18) ^ (w15 >> 3);
-                uint32_t s1 = _rotr(w2, 17) ^ _rotr(w2, 19) ^ (w2 >> 10);
+                uint32_t s0 = rotr32_512(w15, 7) ^ rotr32_512(w15, 18) ^ (w15 >> 3);
+                uint32_t s1 = rotr32_512(w2, 17) ^ rotr32_512(w2, 19) ^ (w2 >> 10);
                 W[i] = s1 + W[i - 7] + s0 + W[i - 16];
             }
 
-            // Scalar rounds with _rotr intrinsic (compiles to RORX/VPRORD)
+            // Scalar rounds (compiler emits RORX/VPRORD with AVX-512 enabled)
             uint32_t a = state[0], b = state[1], c = state[2], d = state[3];
             uint32_t e = state[4], f = state[5], g = state[6], h = state[7];
 
             for (int i = 0; i < 64; ++i)
             {
-                uint32_t S1 = _rotr(e, 6) ^ _rotr(e, 11) ^ _rotr(e, 25);
+                uint32_t S1 = rotr32_512(e, 6) ^ rotr32_512(e, 11) ^ rotr32_512(e, 25);
                 uint32_t ch = (e & f) ^ (~e & g);
                 uint32_t T1 = h + S1 + ch + K256_512[i] + W[i];
-                uint32_t S0 = _rotr(a, 2) ^ _rotr(a, 13) ^ _rotr(a, 22);
+                uint32_t S0 = rotr32_512(a, 2) ^ rotr32_512(a, 13) ^ rotr32_512(a, 22);
                 uint32_t maj = (a & b) ^ (a & c) ^ (b & c);
                 uint32_t T2 = S0 + maj;
                 h = g;

@@ -63,33 +63,8 @@ namespace tinysha
         //   BCAX: bit-clear-and-XOR (chi step)
         void keccak_f1600_arm_ce(uint64_t state[25])
         {
-            // Load state into NEON registers for efficiency.
-            // We use scalar uint64_t lanes accessed via NEON where beneficial,
-            // but the ARM SHA3 instructions work on 128-bit vectors (pairs of lanes).
-
-            // Load state lanes into vectors (pairs of uint64)
-            uint64x2_t s01 = vld1q_u64(&state[0]);
-            uint64x2_t s23 = vld1q_u64(&state[2]);
-            uint64_t s4 = state[4];
-            uint64x2_t s56 = vld1q_u64(&state[5]);
-            uint64x2_t s78 = vld1q_u64(&state[7]);
-            uint64_t s9 = state[9];
-            uint64x2_t s1011 = vld1q_u64(&state[10]);
-            uint64x2_t s1213 = vld1q_u64(&state[12]);
-            uint64_t s14 = state[14];
-            uint64x2_t s1516 = vld1q_u64(&state[15]);
-            uint64x2_t s1718 = vld1q_u64(&state[17]);
-            uint64_t s19 = state[19];
-            uint64x2_t s2021 = vld1q_u64(&state[20]);
-            uint64x2_t s2223 = vld1q_u64(&state[22]);
-            uint64_t s24 = state[24];
-
-            // Store back to array for simpler indexing in the round function
-            // Actually, for clarity and correctness, use the scalar approach with
-            // targeted use of the NEON SHA-3 instructions where they help most.
-
-            // For a clean implementation, we'll work with the state array directly
-            // and use the vector instructions for the key operations.
+            // Work with the state array directly and use NEON SHA-3 instructions
+            // (RAX1, BCAX) for the key operations in theta and chi steps.
 
             for (int round = 0; round < 24; ++round)
             {
