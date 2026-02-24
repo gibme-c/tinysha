@@ -1,0 +1,31 @@
+add_executable(tinysha_benchmarks bench_all.cpp)
+target_link_libraries(tinysha_benchmarks PRIVATE tinysha)
+target_include_directories(tinysha_benchmarks PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src
+)
+set_target_properties(tinysha_benchmarks PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+# Warning flags for benchmarks
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(tinysha_benchmarks PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        set_property(TARGET tinysha_benchmarks APPEND_STRING PROPERTY LINK_FLAGS
+            " -Wl,-z,relro,-z,now -Wl,-z,noexecstack")
+    endif()
+    if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+        set_property(TARGET tinysha_benchmarks APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-bind_at_load")
+    endif()
+    if(MINGW)
+        set_property(TARGET tinysha_benchmarks APPEND_STRING PROPERTY LINK_FLAGS
+            " -Wl,--nxcompat -Wl,--dynamicbase -Wl,--high-entropy-va")
+    endif()
+elseif(MSVC)
+    target_compile_options(tinysha_benchmarks PRIVATE /W4 /WX)
+    set_property(TARGET tinysha_benchmarks APPEND_STRING PROPERTY LINK_FLAGS
+        " /DYNAMICBASE /NXCOMPAT /HIGHENTROPYVA")
+endif()
