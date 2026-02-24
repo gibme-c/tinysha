@@ -143,9 +143,9 @@ namespace tinysha
                     uint64x2_t c23 = {state[y + 4], state[y + 0]};
                     uint64_t c4 = state[y + 1];
 
-                    // BCAX: dest = a ^ (~b & c)
-                    uint64x2_t r01 = vbcaxq_u64(a01, b01, c01);
-                    uint64x2_t r23 = vbcaxq_u64(a23, b23, c23);
+                    // BCAX: dest = a ^ (b & ~c), so swap b/c to get a ^ (~b & c)
+                    uint64x2_t r01 = vbcaxq_u64(a01, c01, b01);
+                    uint64x2_t r23 = vbcaxq_u64(a23, c23, b23);
                     uint64_t r4 = a4 ^ (~b4 & c4);
 
                     vst1q_u64(&state[y], r01);

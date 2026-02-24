@@ -2,15 +2,10 @@ if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     return()
 endif()
 
-# Apple Clang does not ship the libFuzzer runtime (libclang_rt.fuzzer_osx.a).
-# Only standalone LLVM Clang includes it.
-if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    return()
-endif()
-
-# libFuzzer runtime on Windows has CRT mismatches (iterator debug level
-# in Debug, static vs dynamic CRT in Release). Skip fuzz on Windows.
-if(WIN32)
+# libFuzzer is only reliably available on Linux Clang.
+# macOS: Apple Clang lacks the runtime; Homebrew LLVM has ABI mismatches
+# with macOS system libc++. Windows: CRT mismatches in Debug/Release.
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
     return()
 endif()
 
