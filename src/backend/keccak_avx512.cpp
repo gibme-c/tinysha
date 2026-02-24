@@ -25,10 +25,12 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Keccak AVX-512 backend
-// Key benefits over AVX2:
-//   - VPROLVQ: variable-amount 64-bit rotate eliminates scalar rho step
-//   - VPTERNLOGQ: ternary logic can implement chi (a ^ (~b & c)) in one instruction
-// The 25-lane Keccak state is spread across scalar + SIMD as needed.
+// Key instructions used:
+//   - VPROLVQ: variable 64-bit rotate for rho step (replaces 48 scalar shift/or ops)
+//   - VPTERNLOGQ: ternary logic for chi step (a ^ (~b & c) in one instruction)
+//   - VPERMQ / VPERMQVAR: lane permutation for chi row shifts
+// Theta D-application uses vectorized XOR across 3 groups of 8 lanes.
+// Pi uses scalar rearrangement through a temporary buffer.
 
 #if defined(__x86_64__) || defined(_M_X64)
 
@@ -52,12 +54,25 @@ namespace tinysha
             0x8000000080008081ULL, 0x8000000000008080ULL, 0x0000000080000001ULL, 0x8000000080008008ULL,
         };
 
-        // Keccak-f[1600] using AVX-512 intrinsics.
-        // Uses VPTERNLOGQ for chi and scalar rho+pi (VPROLVQ requires specific
-        // lane mapping that adds complexity; scalar rho+pi with rotl is simpler
-        // and still fast since the theta step is the main SIMD win).
         void keccak_f1600_avx512(uint64_t st[25])
         {
+            // Rho rotation amounts indexed by source lane position.
+            // _mm512_set_epi64 takes arguments in reverse order: (e7, e6, e5, e4, e3, e2, e1, e0)
+            //
+            // Rho offsets per lane [x + 5*y]:
+            //   [0]=0   [1]=1   [2]=62  [3]=28  [4]=27  [5]=36  [6]=44  [7]=6
+            //   [8]=55  [9]=20  [10]=3  [11]=10 [12]=43 [13]=25 [14]=39 [15]=41
+            //   [16]=45 [17]=15 [18]=21 [19]=8  [20]=18 [21]=2  [22]=61 [23]=56
+            //   [24]=14
+            const __m512i rho_0 = _mm512_set_epi64(6, 44, 36, 27, 28, 62, 1, 0);
+            const __m512i rho_1 = _mm512_set_epi64(41, 39, 25, 43, 10, 3, 20, 55);
+            const __m512i rho_2 = _mm512_set_epi64(56, 61, 2, 18, 8, 21, 15, 45);
+
+            // Chi row-shift indices: circular shift by +1 and +2 within 5-element rows.
+            // Positions 5-7 are identity (unused but must not alias 0-4).
+            const __m512i chi_s1 = _mm512_set_epi64(7, 6, 5, 0, 4, 3, 2, 1);
+            const __m512i chi_s2 = _mm512_set_epi64(7, 6, 5, 1, 0, 4, 3, 2);
+
             for (int round = 0; round < 24; ++round)
             {
                 // === Theta ===
@@ -69,7 +84,7 @@ namespace tinysha
                 C[3] = st[3] ^ st[8] ^ st[13] ^ st[18] ^ st[23];
                 C[4] = st[4] ^ st[9] ^ st[14] ^ st[19] ^ st[24];
 
-                // D[x] = C[x-1] ^ rotl(C[x+1], 1)
+                // D[x] = C[(x+4)%5] ^ rotl(C[(x+1)%5], 1)
                 uint64_t D[5];
                 D[0] = C[4] ^ ((C[1] << 1) | (C[1] >> 63));
                 D[1] = C[0] ^ ((C[2] << 1) | (C[2] >> 63));
@@ -77,8 +92,9 @@ namespace tinysha
                 D[3] = C[2] ^ ((C[4] << 1) | (C[4] >> 63));
                 D[4] = C[3] ^ ((C[0] << 1) | (C[0] >> 63));
 
-                // Apply D — use 512-bit XOR for first 24 lanes, scalar for st[24]
-                __m512i vd_0_7 = _mm512_set_epi64(
+                // Apply D using AVX-512 XOR (3 vectors for lanes 0-23, scalar for lane 24)
+                // D pattern repeats mod 5 across lane indices
+                __m512i vd_0 = _mm512_set_epi64(
                     static_cast<long long>(D[2]),
                     static_cast<long long>(D[1]),
                     static_cast<long long>(D[0]),
@@ -87,10 +103,9 @@ namespace tinysha
                     static_cast<long long>(D[2]),
                     static_cast<long long>(D[1]),
                     static_cast<long long>(D[0]));
-                __m512i vs_0_7 = _mm512_loadu_si512(st);
-                _mm512_storeu_si512(st, _mm512_xor_si512(vs_0_7, vd_0_7));
+                __m512i s0 = _mm512_xor_si512(_mm512_loadu_si512(st), vd_0);
 
-                __m512i vd_8_15 = _mm512_set_epi64(
+                __m512i vd_1 = _mm512_set_epi64(
                     static_cast<long long>(D[0]),
                     static_cast<long long>(D[4]),
                     static_cast<long long>(D[3]),
@@ -99,10 +114,9 @@ namespace tinysha
                     static_cast<long long>(D[0]),
                     static_cast<long long>(D[4]),
                     static_cast<long long>(D[3]));
-                __m512i vs_8_15 = _mm512_loadu_si512(st + 8);
-                _mm512_storeu_si512(st + 8, _mm512_xor_si512(vs_8_15, vd_8_15));
+                __m512i s1 = _mm512_xor_si512(_mm512_loadu_si512(st + 8), vd_1);
 
-                __m512i vd_16_23 = _mm512_set_epi64(
+                __m512i vd_2 = _mm512_set_epi64(
                     static_cast<long long>(D[3]),
                     static_cast<long long>(D[2]),
                     static_cast<long long>(D[1]),
@@ -111,96 +125,65 @@ namespace tinysha
                     static_cast<long long>(D[3]),
                     static_cast<long long>(D[2]),
                     static_cast<long long>(D[1]));
-                __m512i vs_16_23 = _mm512_loadu_si512(st + 16);
-                _mm512_storeu_si512(st + 16, _mm512_xor_si512(vs_16_23, vd_16_23));
+                __m512i s2 = _mm512_xor_si512(_mm512_loadu_si512(st + 16), vd_2);
 
-                st[24] ^= D[4];
+                uint64_t s24 = st[24] ^ D[4];
 
-                // === Rho + Pi (scalar — per-lane variable rotations) ===
-                uint64_t t = st[1], tmp;
-                tmp = st[10];
-                st[10] = (t << 1) | (t >> 63);
-                t = tmp;
-                tmp = st[7];
-                st[7] = (t << 3) | (t >> 61);
-                t = tmp;
-                tmp = st[11];
-                st[11] = (t << 6) | (t >> 58);
-                t = tmp;
-                tmp = st[17];
-                st[17] = (t << 10) | (t >> 54);
-                t = tmp;
-                tmp = st[18];
-                st[18] = (t << 15) | (t >> 49);
-                t = tmp;
-                tmp = st[3];
-                st[3] = (t << 21) | (t >> 43);
-                t = tmp;
-                tmp = st[5];
-                st[5] = (t << 28) | (t >> 36);
-                t = tmp;
-                tmp = st[16];
-                st[16] = (t << 36) | (t >> 28);
-                t = tmp;
-                tmp = st[8];
-                st[8] = (t << 45) | (t >> 19);
-                t = tmp;
-                tmp = st[21];
-                st[21] = (t << 55) | (t >> 9);
-                t = tmp;
-                tmp = st[24];
-                st[24] = (t << 2) | (t >> 62);
-                t = tmp;
-                tmp = st[4];
-                st[4] = (t << 14) | (t >> 50);
-                t = tmp;
-                tmp = st[15];
-                st[15] = (t << 27) | (t >> 37);
-                t = tmp;
-                tmp = st[23];
-                st[23] = (t << 41) | (t >> 23);
-                t = tmp;
-                tmp = st[19];
-                st[19] = (t << 56) | (t >> 8);
-                t = tmp;
-                tmp = st[13];
-                st[13] = (t << 8) | (t >> 56);
-                t = tmp;
-                tmp = st[12];
-                st[12] = (t << 25) | (t >> 39);
-                t = tmp;
-                tmp = st[2];
-                st[2] = (t << 43) | (t >> 21);
-                t = tmp;
-                tmp = st[20];
-                st[20] = (t << 62) | (t >> 2);
-                t = tmp;
-                tmp = st[14];
-                st[14] = (t << 18) | (t >> 46);
-                t = tmp;
-                tmp = st[22];
-                st[22] = (t << 39) | (t >> 25);
-                t = tmp;
-                tmp = st[9];
-                st[9] = (t << 61) | (t >> 3);
-                t = tmp;
-                tmp = st[6];
-                st[6] = (t << 20) | (t >> 44);
-                t = tmp;
-                st[1] = (t << 44) | (t >> 20);
+                // === Rho (VPROLVQ — variable 64-bit rotate) ===
+                s0 = _mm512_rolv_epi64(s0, rho_0);
+                s1 = _mm512_rolv_epi64(s1, rho_1);
+                s2 = _mm512_rolv_epi64(s2, rho_2);
+                s24 = (s24 << 14) | (s24 >> 50); // lane 24: rho=14
 
-                // === Chi ===
-                // chi: st[x] ^= ~st[x+1] & st[x+2]
-                // Use VPTERNLOGQ: f(a,b,c) = a ^ (~b & c) = ternary 0x78
+                // === Pi (scalar rearrangement via temporary buffer) ===
+                // Store rotated lanes to aligned temp, then scatter to pi destinations.
+                // Pi inverse: dst[d] = src[pi_inv[d]]
+                alignas(64) uint64_t tmp[32]; // extra padding for aligned stores
+                _mm512_store_si512(tmp, s0);
+                _mm512_store_si512(tmp + 8, s1);
+                _mm512_store_si512(tmp + 16, s2);
+                tmp[24] = s24;
+
+                st[0] = tmp[0];
+                st[1] = tmp[6];
+                st[2] = tmp[12];
+                st[3] = tmp[18];
+                st[4] = tmp[24];
+                st[5] = tmp[3];
+                st[6] = tmp[9];
+                st[7] = tmp[10];
+                st[8] = tmp[16];
+                st[9] = tmp[22];
+                st[10] = tmp[1];
+                st[11] = tmp[7];
+                st[12] = tmp[13];
+                st[13] = tmp[19];
+                st[14] = tmp[20];
+                st[15] = tmp[4];
+                st[16] = tmp[5];
+                st[17] = tmp[11];
+                st[18] = tmp[17];
+                st[19] = tmp[23];
+                st[20] = tmp[2];
+                st[21] = tmp[8];
+                st[22] = tmp[14];
+                st[23] = tmp[15];
+                st[24] = tmp[21];
+
+                // === Chi (VPTERNLOGQ per row) ===
+                // For each 5-lane row: new[x] = old[x] ^ (~old[(x+1)%5] & old[(x+2)%5])
+                // VPTERNLOGQ(a, b, c, 0x78) = a ^ (~b & c)
+                // Load row, create +1 and +2 circular shifts, apply ternary logic,
+                // masked store (5 of 8 lanes).
                 for (int y = 0; y < 25; y += 5)
                 {
-                    uint64_t t0 = st[y], t1 = st[y + 1], t2 = st[y + 2];
-                    uint64_t t3 = st[y + 3], t4 = st[y + 4];
-                    st[y + 0] = t0 ^ (~t1 & t2);
-                    st[y + 1] = t1 ^ (~t2 & t3);
-                    st[y + 2] = t2 ^ (~t3 & t4);
-                    st[y + 3] = t3 ^ (~t4 & t0);
-                    st[y + 4] = t4 ^ (~t0 & t1);
+                    __m512i row = (y < 20) ? _mm512_loadu_si512(st + y) : _mm512_maskz_loadu_epi64(0x1F, st + y);
+
+                    __m512i row1 = _mm512_permutexvar_epi64(chi_s1, row);
+                    __m512i row2 = _mm512_permutexvar_epi64(chi_s2, row);
+                    row = _mm512_ternarylogic_epi64(row, row1, row2, 0xD2);
+
+                    _mm512_mask_storeu_epi64(st + y, 0x1F, row);
                 }
 
                 // === Iota ===

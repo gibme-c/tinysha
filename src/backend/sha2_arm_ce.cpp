@@ -277,17 +277,17 @@ namespace tinysha
 //   3. Extract cross-lane state pairs fg, de from ORIGINAL state
 //   4. sha512h produces intermediate; sha512h2 produces new AB
 //   5. cd += intermed to propagate the Sigma1+Ch contribution (new EF after rotation)
-#define SHA512_2ROUNDS(ab, cd, ef, gh, wi, ki)                         \
-    do                                                                  \
-    {                                                                   \
-        uint64x2_t wk = vaddq_u64(W[wi], vld1q_u64(&K512[ki]));        \
-        wk = vextq_u64(wk, wk, 1);                                     \
-        uint64x2_t fg = vextq_u64(ef, gh, 1);                          \
-        uint64x2_t de = vextq_u64(cd, ef, 1);                          \
-        uint64x2_t sum = vaddq_u64(wk, gh);                            \
-        uint64x2_t intermed = vsha512hq_u64(sum, fg, de);              \
-        gh = vsha512h2q_u64(intermed, cd, ab);                         \
-        cd = vaddq_u64(cd, intermed);                                  \
+#define SHA512_2ROUNDS(ab, cd, ef, gh, wi, ki)                  \
+    do                                                          \
+    {                                                           \
+        uint64x2_t wk = vaddq_u64(W[wi], vld1q_u64(&K512[ki])); \
+        wk = vextq_u64(wk, wk, 1);                              \
+        uint64x2_t fg = vextq_u64(ef, gh, 1);                   \
+        uint64x2_t de = vextq_u64(cd, ef, 1);                   \
+        uint64x2_t sum = vaddq_u64(wk, gh);                     \
+        uint64x2_t intermed = vsha512hq_u64(sum, fg, de);       \
+        gh = vsha512h2q_u64(intermed, cd, ab);                  \
+        cd = vaddq_u64(cd, intermed);                           \
     } while (0)
 
 // Two rounds + message schedule update
