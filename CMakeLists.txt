@@ -171,17 +171,26 @@ endif()
 
 # --- Per-backend SIMD compile flags ---
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64" AND NOT FORCE_PORTABLE)
+    # MinGW GCC + Debug: Windows x64 ABI only guarantees 16-byte stack alignment,
+    # but YMM/ZMM registers need 32/64-byte alignment. At -O0, GCC spills AVX
+    # registers to the stack with aligned moves (vmovdqa), which SIGSEGV on the
+    # misaligned stack. Force -O1 for SIMD backends in Debug mode so GCC keeps
+    # values in registers. -mpreferred-stack-boundary=5 is blocked by the ABI.
+    set(_MINGW_SIMD_FIX "")
+    if(MINGW AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        set(_MINGW_SIMD_FIX " $<$<CONFIG:Debug>:-O1>")
+    endif()
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         set_source_files_properties(src/backend/sha2_avx2.cpp PROPERTIES
-            COMPILE_FLAGS "-mavx2 -mbmi2")
+            COMPILE_FLAGS "-mavx2 -mbmi2${_MINGW_SIMD_FIX}")
         set_source_files_properties(src/backend/keccak_avx2.cpp PROPERTIES
-            COMPILE_FLAGS "-mavx2")
+            COMPILE_FLAGS "-mavx2${_MINGW_SIMD_FIX}")
         set_source_files_properties(src/backend/sha2_avx512.cpp PROPERTIES
-            COMPILE_FLAGS "-mavx512f -mavx512ifma")
+            COMPILE_FLAGS "-mavx512f -mavx512ifma${_MINGW_SIMD_FIX}")
         set_source_files_properties(src/backend/keccak_avx512.cpp PROPERTIES
-            COMPILE_FLAGS "-mavx512f -mavx512ifma")
+            COMPILE_FLAGS "-mavx512f -mavx512ifma${_MINGW_SIMD_FIX}")
         set_source_files_properties(src/backend/sha2_bmi2_adx.cpp PROPERTIES
-            COMPILE_FLAGS "-mbmi2 -madx")
+            COMPILE_FLAGS "-mbmi2 -madx${_MINGW_SIMD_FIX}")
     elseif(MSVC)
         set_source_files_properties(src/backend/sha2_avx2.cpp PROPERTIES
             COMPILE_FLAGS "/arch:AVX2")
