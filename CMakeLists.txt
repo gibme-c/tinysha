@@ -68,6 +68,10 @@ endif()
 target_include_directories(tinysha PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
+# Consumers get our headers as SYSTEM includes (suppresses their warning flags on our code)
+target_include_directories(tinysha SYSTEM INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
 # Internal headers (src/) for the library itself
 target_include_directories(tinysha PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
