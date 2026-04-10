@@ -38,6 +38,16 @@ TEST(sha256_truncation)
     ASSERT_EQ(trunc, expected);
 }
 
+TEST(sha384_truncation)
+{
+    std::vector<uint8_t> data = {0x61, 0x62, 0x63};
+    auto full = tinysha::sha384(data);
+    auto trunc = tinysha::sha384(data, 20);
+    ASSERT_TRUE(trunc.size() == 20);
+    std::vector<uint8_t> expected(full.begin(), full.begin() + 20);
+    ASSERT_EQ(trunc, expected);
+}
+
 TEST(sha512_truncation)
 {
     std::vector<uint8_t> data = {0x61, 0x62, 0x63};
@@ -58,12 +68,54 @@ TEST(sha3_256_truncation)
     ASSERT_EQ(trunc, expected);
 }
 
+TEST(sha3_384_truncation)
+{
+    std::vector<uint8_t> data = {0x61, 0x62, 0x63};
+    auto full = tinysha::sha3_384(data);
+    auto trunc = tinysha::sha3_384(data, 20);
+    ASSERT_TRUE(trunc.size() == 20);
+    std::vector<uint8_t> expected(full.begin(), full.begin() + 20);
+    ASSERT_EQ(trunc, expected);
+}
+
+TEST(sha3_512_truncation)
+{
+    std::vector<uint8_t> data = {0x61, 0x62, 0x63};
+    auto full = tinysha::sha3_512(data);
+    auto trunc = tinysha::sha3_512(data, 20);
+    ASSERT_TRUE(trunc.size() == 20);
+    std::vector<uint8_t> expected(full.begin(), full.begin() + 20);
+    ASSERT_EQ(trunc, expected);
+}
+
 TEST(hmac_truncation)
 {
     std::vector<uint8_t> key = {0x0b, 0x0b, 0x0b, 0x0b};
     std::vector<uint8_t> data = {0x48, 0x69};
     auto full = tinysha::hmac<tinysha::SHA256Traits>(key, data);
     auto trunc = tinysha::hmac<tinysha::SHA256Traits>(key, data, 10);
+    ASSERT_TRUE(trunc.size() == 10);
+    std::vector<uint8_t> expected(full.begin(), full.begin() + 10);
+    ASSERT_EQ(trunc, expected);
+}
+
+TEST(hmac_sha512_truncation)
+{
+    std::vector<uint8_t> key = {0x0b, 0x0b, 0x0b, 0x0b};
+    std::vector<uint8_t> data = {0x48, 0x69};
+    auto full = tinysha::hmac<tinysha::SHA512Traits>(key, data);
+    auto trunc = tinysha::hmac<tinysha::SHA512Traits>(key, data, 16);
+    ASSERT_TRUE(trunc.size() == 16);
+    std::vector<uint8_t> expected(full.begin(), full.begin() + 16);
+    ASSERT_EQ(trunc, expected);
+}
+
+TEST(hmac_sha3_256_truncation)
+{
+    std::vector<uint8_t> key = {0x0b, 0x0b, 0x0b, 0x0b};
+    std::vector<uint8_t> data = {0x48, 0x69};
+    auto full = tinysha::hmac<tinysha::SHA3_256Traits>(key, data);
+    auto trunc = tinysha::hmac<tinysha::SHA3_256Traits>(key, data, 10);
     ASSERT_TRUE(trunc.size() == 10);
     std::vector<uint8_t> expected(full.begin(), full.begin() + 10);
     ASSERT_EQ(trunc, expected);

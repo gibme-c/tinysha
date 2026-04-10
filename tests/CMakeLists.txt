@@ -9,6 +9,7 @@ add_executable(tinysha_tests
     test_hmac.cpp
     test_pbkdf2.cpp
     test_truncation.cpp
+    test_block_boundary.cpp
     test_cpuid.cpp
     test_c_api_negative.cpp
 )

@@ -110,7 +110,11 @@ TEST(hmac_c_api_null_out)
     const uint8_t key[] = {0x0b};
     const uint8_t data[] = {0x61};
     ASSERT_TRUE(tinysha_hmac_sha256(key, 1, data, 1, nullptr, 32) == -1);
+    ASSERT_TRUE(tinysha_hmac_sha384(key, 1, data, 1, nullptr, 48) == -1);
     ASSERT_TRUE(tinysha_hmac_sha512(key, 1, data, 1, nullptr, 64) == -1);
+    ASSERT_TRUE(tinysha_hmac_sha3_256(key, 1, data, 1, nullptr, 32) == -1);
+    ASSERT_TRUE(tinysha_hmac_sha3_384(key, 1, data, 1, nullptr, 48) == -1);
+    ASSERT_TRUE(tinysha_hmac_sha3_512(key, 1, data, 1, nullptr, 64) == -1);
 }
 
 TEST(hmac_c_api_null_key_nonzero_len)
@@ -118,7 +122,11 @@ TEST(hmac_c_api_null_key_nonzero_len)
     const uint8_t data[] = {0x61};
     uint8_t out[64];
     ASSERT_TRUE(tinysha_hmac_sha256(nullptr, 1, data, 1, out, 32) == -1);
+    ASSERT_TRUE(tinysha_hmac_sha384(nullptr, 1, data, 1, out, 48) == -1);
     ASSERT_TRUE(tinysha_hmac_sha512(nullptr, 1, data, 1, out, 64) == -1);
+    ASSERT_TRUE(tinysha_hmac_sha3_256(nullptr, 1, data, 1, out, 32) == -1);
+    ASSERT_TRUE(tinysha_hmac_sha3_384(nullptr, 1, data, 1, out, 48) == -1);
+    ASSERT_TRUE(tinysha_hmac_sha3_512(nullptr, 1, data, 1, out, 64) == -1);
 }
 
 TEST(hmac_c_api_null_data_nonzero_len)
@@ -126,7 +134,11 @@ TEST(hmac_c_api_null_data_nonzero_len)
     const uint8_t key[] = {0x0b};
     uint8_t out[64];
     ASSERT_TRUE(tinysha_hmac_sha256(key, 1, nullptr, 1, out, 32) == -1);
+    ASSERT_TRUE(tinysha_hmac_sha384(key, 1, nullptr, 1, out, 48) == -1);
     ASSERT_TRUE(tinysha_hmac_sha512(key, 1, nullptr, 1, out, 64) == -1);
+    ASSERT_TRUE(tinysha_hmac_sha3_256(key, 1, nullptr, 1, out, 32) == -1);
+    ASSERT_TRUE(tinysha_hmac_sha3_384(key, 1, nullptr, 1, out, 48) == -1);
+    ASSERT_TRUE(tinysha_hmac_sha3_512(key, 1, nullptr, 1, out, 64) == -1);
 }
 
 TEST(hmac_c_api_zero_out_len)
@@ -135,7 +147,11 @@ TEST(hmac_c_api_zero_out_len)
     const uint8_t data[] = {0x61};
     uint8_t out[64];
     ASSERT_TRUE(tinysha_hmac_sha256(key, 1, data, 1, out, 0) == -1);
+    ASSERT_TRUE(tinysha_hmac_sha384(key, 1, data, 1, out, 0) == -1);
     ASSERT_TRUE(tinysha_hmac_sha512(key, 1, data, 1, out, 0) == -1);
+    ASSERT_TRUE(tinysha_hmac_sha3_256(key, 1, data, 1, out, 0) == -1);
+    ASSERT_TRUE(tinysha_hmac_sha3_384(key, 1, data, 1, out, 0) == -1);
+    ASSERT_TRUE(tinysha_hmac_sha3_512(key, 1, data, 1, out, 0) == -1);
 }
 
 TEST(hmac_c_api_out_len_too_large)
@@ -144,7 +160,11 @@ TEST(hmac_c_api_out_len_too_large)
     const uint8_t data[] = {0x61};
     uint8_t out[128];
     ASSERT_TRUE(tinysha_hmac_sha256(key, 1, data, 1, out, 33) == -1);
+    ASSERT_TRUE(tinysha_hmac_sha384(key, 1, data, 1, out, 49) == -1);
     ASSERT_TRUE(tinysha_hmac_sha512(key, 1, data, 1, out, 65) == -1);
+    ASSERT_TRUE(tinysha_hmac_sha3_256(key, 1, data, 1, out, 33) == -1);
+    ASSERT_TRUE(tinysha_hmac_sha3_384(key, 1, data, 1, out, 49) == -1);
+    ASSERT_TRUE(tinysha_hmac_sha3_512(key, 1, data, 1, out, 65) == -1);
 }
 
 // ── PBKDF2 C API negative tests ───────────────────────────────────────────
@@ -154,6 +174,11 @@ TEST(pbkdf2_c_api_null_out)
     const uint8_t pw[] = {0x70};
     const uint8_t salt[] = {0x73};
     ASSERT_TRUE(tinysha_pbkdf2_sha256(pw, 1, salt, 1, 1, nullptr, 32) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha384(pw, 1, salt, 1, 1, nullptr, 32) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha512(pw, 1, salt, 1, 1, nullptr, 32) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha3_256(pw, 1, salt, 1, 1, nullptr, 32) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha3_384(pw, 1, salt, 1, 1, nullptr, 32) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha3_512(pw, 1, salt, 1, 1, nullptr, 32) == -1);
 }
 
 TEST(pbkdf2_c_api_zero_dk_len)
@@ -162,6 +187,11 @@ TEST(pbkdf2_c_api_zero_dk_len)
     const uint8_t salt[] = {0x73};
     uint8_t out[32];
     ASSERT_TRUE(tinysha_pbkdf2_sha256(pw, 1, salt, 1, 1, out, 0) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha384(pw, 1, salt, 1, 1, out, 0) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha512(pw, 1, salt, 1, 1, out, 0) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha3_256(pw, 1, salt, 1, 1, out, 0) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha3_384(pw, 1, salt, 1, 1, out, 0) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha3_512(pw, 1, salt, 1, 1, out, 0) == -1);
 }
 
 TEST(pbkdf2_c_api_zero_iterations)
@@ -170,6 +200,11 @@ TEST(pbkdf2_c_api_zero_iterations)
     const uint8_t salt[] = {0x73};
     uint8_t out[32];
     ASSERT_TRUE(tinysha_pbkdf2_sha256(pw, 1, salt, 1, 0, out, 32) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha384(pw, 1, salt, 1, 0, out, 32) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha512(pw, 1, salt, 1, 0, out, 32) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha3_256(pw, 1, salt, 1, 0, out, 32) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha3_384(pw, 1, salt, 1, 0, out, 32) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha3_512(pw, 1, salt, 1, 0, out, 32) == -1);
 }
 
 TEST(pbkdf2_c_api_null_password_nonzero_len)
@@ -177,6 +212,11 @@ TEST(pbkdf2_c_api_null_password_nonzero_len)
     const uint8_t salt[] = {0x73};
     uint8_t out[32];
     ASSERT_TRUE(tinysha_pbkdf2_sha256(nullptr, 1, salt, 1, 1, out, 32) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha384(nullptr, 1, salt, 1, 1, out, 32) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha512(nullptr, 1, salt, 1, 1, out, 32) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha3_256(nullptr, 1, salt, 1, 1, out, 32) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha3_384(nullptr, 1, salt, 1, 1, out, 32) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha3_512(nullptr, 1, salt, 1, 1, out, 32) == -1);
 }
 
 TEST(pbkdf2_c_api_null_salt_nonzero_len)
@@ -184,6 +224,11 @@ TEST(pbkdf2_c_api_null_salt_nonzero_len)
     const uint8_t pw[] = {0x70};
     uint8_t out[32];
     ASSERT_TRUE(tinysha_pbkdf2_sha256(pw, 1, nullptr, 1, 1, out, 32) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha384(pw, 1, nullptr, 1, 1, out, 32) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha512(pw, 1, nullptr, 1, 1, out, 32) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha3_256(pw, 1, nullptr, 1, 1, out, 32) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha3_384(pw, 1, nullptr, 1, 1, out, 32) == -1);
+    ASSERT_TRUE(tinysha_pbkdf2_sha3_512(pw, 1, nullptr, 1, 1, out, 32) == -1);
 }
 
 // ── constant_time_equal tests ──────────────────────────────────────────────

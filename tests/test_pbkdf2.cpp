@@ -29,11 +29,13 @@
 
 #include <tinysha.h>
 
+// ── PBKDF2-SHA-256 ────────────────────────────────────────────────────────
+
 TEST(pbkdf2_sha256_vectors)
 {
-    for (size_t i = 0; i < pbkdf2_vector_count; ++i)
+    for (size_t i = 0; i < pbkdf2_sha256_vector_count; ++i)
     {
-        const auto &v = pbkdf2_vectors[i];
+        const auto &v = pbkdf2_sha256_vectors[i];
         std::vector<uint8_t> pw(v.password, v.password + v.password_len);
         std::vector<uint8_t> salt(v.salt, v.salt + v.salt_len);
         auto dk = tinysha::pbkdf2<tinysha::SHA256Traits>(pw, salt, v.iterations, v.dk_len);
@@ -44,9 +46,137 @@ TEST(pbkdf2_sha256_vectors)
 
 TEST(pbkdf2_sha256_c_api)
 {
-    const auto &v = pbkdf2_vectors[0];
+    const auto &v = pbkdf2_sha256_vectors[0];
     std::vector<uint8_t> out(v.dk_len);
     int rc = tinysha_pbkdf2_sha256(v.password, v.password_len, v.salt, v.salt_len, v.iterations, out.data(), v.dk_len);
+    ASSERT_TRUE(rc == 0);
+    std::vector<uint8_t> expected(v.expected, v.expected + v.expected_len);
+    ASSERT_EQ(out, expected);
+}
+
+// ── PBKDF2-SHA-384 ────────────────────────────────────────────────────────
+
+TEST(pbkdf2_sha384_vectors)
+{
+    for (size_t i = 0; i < pbkdf2_sha384_vector_count; ++i)
+    {
+        const auto &v = pbkdf2_sha384_vectors[i];
+        std::vector<uint8_t> pw(v.password, v.password + v.password_len);
+        std::vector<uint8_t> salt(v.salt, v.salt + v.salt_len);
+        auto dk = tinysha::pbkdf2<tinysha::SHA384Traits>(pw, salt, v.iterations, v.dk_len);
+        std::vector<uint8_t> expected(v.expected, v.expected + v.expected_len);
+        ASSERT_EQ(dk, expected);
+    }
+}
+
+TEST(pbkdf2_sha384_c_api)
+{
+    const auto &v = pbkdf2_sha384_vectors[0];
+    std::vector<uint8_t> out(v.dk_len);
+    int rc = tinysha_pbkdf2_sha384(v.password, v.password_len, v.salt, v.salt_len, v.iterations, out.data(), v.dk_len);
+    ASSERT_TRUE(rc == 0);
+    std::vector<uint8_t> expected(v.expected, v.expected + v.expected_len);
+    ASSERT_EQ(out, expected);
+}
+
+// ── PBKDF2-SHA-512 ────────────────────────────────────────────────────────
+
+TEST(pbkdf2_sha512_vectors)
+{
+    for (size_t i = 0; i < pbkdf2_sha512_vector_count; ++i)
+    {
+        const auto &v = pbkdf2_sha512_vectors[i];
+        std::vector<uint8_t> pw(v.password, v.password + v.password_len);
+        std::vector<uint8_t> salt(v.salt, v.salt + v.salt_len);
+        auto dk = tinysha::pbkdf2<tinysha::SHA512Traits>(pw, salt, v.iterations, v.dk_len);
+        std::vector<uint8_t> expected(v.expected, v.expected + v.expected_len);
+        ASSERT_EQ(dk, expected);
+    }
+}
+
+TEST(pbkdf2_sha512_c_api)
+{
+    const auto &v = pbkdf2_sha512_vectors[0];
+    std::vector<uint8_t> out(v.dk_len);
+    int rc = tinysha_pbkdf2_sha512(v.password, v.password_len, v.salt, v.salt_len, v.iterations, out.data(), v.dk_len);
+    ASSERT_TRUE(rc == 0);
+    std::vector<uint8_t> expected(v.expected, v.expected + v.expected_len);
+    ASSERT_EQ(out, expected);
+}
+
+// ── PBKDF2-SHA3-256 ───────────────────────────────────────────────────────
+
+TEST(pbkdf2_sha3_256_vectors)
+{
+    for (size_t i = 0; i < pbkdf2_sha3_256_vector_count; ++i)
+    {
+        const auto &v = pbkdf2_sha3_256_vectors[i];
+        std::vector<uint8_t> pw(v.password, v.password + v.password_len);
+        std::vector<uint8_t> salt(v.salt, v.salt + v.salt_len);
+        auto dk = tinysha::pbkdf2<tinysha::SHA3_256Traits>(pw, salt, v.iterations, v.dk_len);
+        std::vector<uint8_t> expected(v.expected, v.expected + v.expected_len);
+        ASSERT_EQ(dk, expected);
+    }
+}
+
+TEST(pbkdf2_sha3_256_c_api)
+{
+    const auto &v = pbkdf2_sha3_256_vectors[0];
+    std::vector<uint8_t> out(v.dk_len);
+    int rc =
+        tinysha_pbkdf2_sha3_256(v.password, v.password_len, v.salt, v.salt_len, v.iterations, out.data(), v.dk_len);
+    ASSERT_TRUE(rc == 0);
+    std::vector<uint8_t> expected(v.expected, v.expected + v.expected_len);
+    ASSERT_EQ(out, expected);
+}
+
+// ── PBKDF2-SHA3-384 ───────────────────────────────────────────────────────
+
+TEST(pbkdf2_sha3_384_vectors)
+{
+    for (size_t i = 0; i < pbkdf2_sha3_384_vector_count; ++i)
+    {
+        const auto &v = pbkdf2_sha3_384_vectors[i];
+        std::vector<uint8_t> pw(v.password, v.password + v.password_len);
+        std::vector<uint8_t> salt(v.salt, v.salt + v.salt_len);
+        auto dk = tinysha::pbkdf2<tinysha::SHA3_384Traits>(pw, salt, v.iterations, v.dk_len);
+        std::vector<uint8_t> expected(v.expected, v.expected + v.expected_len);
+        ASSERT_EQ(dk, expected);
+    }
+}
+
+TEST(pbkdf2_sha3_384_c_api)
+{
+    const auto &v = pbkdf2_sha3_384_vectors[0];
+    std::vector<uint8_t> out(v.dk_len);
+    int rc =
+        tinysha_pbkdf2_sha3_384(v.password, v.password_len, v.salt, v.salt_len, v.iterations, out.data(), v.dk_len);
+    ASSERT_TRUE(rc == 0);
+    std::vector<uint8_t> expected(v.expected, v.expected + v.expected_len);
+    ASSERT_EQ(out, expected);
+}
+
+// ── PBKDF2-SHA3-512 ───────────────────────────────────────────────────────
+
+TEST(pbkdf2_sha3_512_vectors)
+{
+    for (size_t i = 0; i < pbkdf2_sha3_512_vector_count; ++i)
+    {
+        const auto &v = pbkdf2_sha3_512_vectors[i];
+        std::vector<uint8_t> pw(v.password, v.password + v.password_len);
+        std::vector<uint8_t> salt(v.salt, v.salt + v.salt_len);
+        auto dk = tinysha::pbkdf2<tinysha::SHA3_512Traits>(pw, salt, v.iterations, v.dk_len);
+        std::vector<uint8_t> expected(v.expected, v.expected + v.expected_len);
+        ASSERT_EQ(dk, expected);
+    }
+}
+
+TEST(pbkdf2_sha3_512_c_api)
+{
+    const auto &v = pbkdf2_sha3_512_vectors[0];
+    std::vector<uint8_t> out(v.dk_len);
+    int rc =
+        tinysha_pbkdf2_sha3_512(v.password, v.password_len, v.salt, v.salt_len, v.iterations, out.data(), v.dk_len);
     ASSERT_TRUE(rc == 0);
     std::vector<uint8_t> expected(v.expected, v.expected + v.expected_len);
     ASSERT_EQ(out, expected);

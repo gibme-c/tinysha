@@ -16,8 +16,19 @@ set(FUZZ_TARGETS
     fuzz_sha3_256
     fuzz_sha3_384
     fuzz_sha3_512
-    fuzz_hmac
-    fuzz_pbkdf2
+    fuzz_hmac_sha256
+    fuzz_hmac_sha384
+    fuzz_hmac_sha512
+    fuzz_hmac_sha3_256
+    fuzz_hmac_sha3_384
+    fuzz_hmac_sha3_512
+    fuzz_pbkdf2_sha256
+    fuzz_pbkdf2_sha384
+    fuzz_pbkdf2_sha512
+    fuzz_pbkdf2_sha3_256
+    fuzz_pbkdf2_sha3_384
+    fuzz_pbkdf2_sha3_512
+    fuzz_truncation
 )
 
 foreach(target ${FUZZ_TARGETS})
