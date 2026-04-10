@@ -10,6 +10,7 @@ add_executable(tinysha_tests
     test_pbkdf2.cpp
     test_truncation.cpp
     test_cpuid.cpp
+    test_c_api_negative.cpp
 )
 
 target_link_libraries(tinysha_tests PRIVATE tinysha)

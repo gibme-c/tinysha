@@ -58,6 +58,17 @@ namespace tinysha
 #endif
         }
 
+        static uint64_t xgetbv(uint32_t xcr)
+        {
+#if defined(_MSC_VER) && !defined(__clang__)
+            return _xgetbv(xcr);
+#else
+            uint32_t eax, edx;
+            __asm__ __volatile__("xgetbv" : "=a"(eax), "=d"(edx) : "c"(xcr));
+            return static_cast<uint64_t>(edx) << 32 | eax;
+#endif
+        }
+
         CpuFeatures detect_cpu_features()
         {
             CpuFeatures f;
@@ -69,13 +80,24 @@ namespace tinysha
             if (max_leaf < 7)
                 return f;
 
+            // Leaf 1: check OSXSAVE (ECX bit 27) — required before XGETBV
+            cpuid(1, 0, eax, ebx, ecx, edx);
+            bool osxsave = (ecx & (1u << 27)) != 0;
+            if (!osxsave)
+                return f;
+
+            // Read XCR0 to check OS-enabled state saving
+            uint64_t xcr0 = xgetbv(0);
+            bool os_avx = (xcr0 & 0x06) == 0x06; // bits 1+2: SSE + AVX state
+            bool os_avx512 = os_avx && (xcr0 & 0xE0) == 0xE0; // bits 5+6+7: opmask + ZMM hi256 + ZMM hi16
+
             // Leaf 7, subleaf 0
             cpuid(7, 0, eax, ebx, ecx, edx);
-            f.avx2 = (ebx & (1u << 5)) != 0;
+            f.avx2 = os_avx && (ebx & (1u << 5)) != 0;
             f.bmi2 = (ebx & (1u << 8)) != 0;
             f.adx = (ebx & (1u << 19)) != 0;
-            f.avx512f = (ebx & (1u << 16)) != 0;
-            f.avx512ifma = (ebx & (1u << 21)) != 0;
+            f.avx512f = os_avx512 && (ebx & (1u << 16)) != 0;
+            f.avx512ifma = os_avx512 && (ebx & (1u << 21)) != 0;
 
             return f;
         }
@@ -101,13 +123,12 @@ namespace tinysha
             f.arm_sha3 = (hwcap & HWCAP_SHA3) != 0;
 #endif
 #elif defined(_M_ARM64)
-            // Windows on ARM64: use IsProcessorFeaturePresent
-            // SHA-256 CE is baseline on all Windows ARM64 devices
+            // Windows on ARM64: SHA-256 CE is baseline on all Windows ARM64 devices
             f.arm_sha256 = true;
-            // SHA-512 and SHA-3 detection not exposed via standard API;
-            // conservatively assume available on modern hardware
-            f.arm_sha512 = true;
-            f.arm_sha3 = true;
+            // SHA-512 and SHA-3 detection not exposed via standard Windows API;
+            // default to portable fallback to avoid illegal instruction faults
+            f.arm_sha512 = false;
+            f.arm_sha3 = false;
 #endif
 
             return f;

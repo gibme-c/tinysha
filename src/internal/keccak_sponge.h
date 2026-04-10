@@ -31,7 +31,6 @@
 #include "tinysha/common.h"
 
 #include <atomic>
-#include <cassert>
 #include <cstdint>
 #include <cstring>
 #include <vector>
@@ -85,7 +84,8 @@ namespace tinysha
 
         inline std::vector<uint8_t> sha3_sponge(const uint8_t *data, size_t len, size_t rate_bytes, size_t digest_bytes)
         {
-            assert(rate_bytes > 0 && rate_bytes <= 200 && rate_bytes % 8 == 0);
+            if (rate_bytes == 0 || rate_bytes > 200 || rate_bytes % 8 != 0)
+                return {};
 
             auto permute = get_keccak();
 
@@ -104,7 +104,8 @@ namespace tinysha
             // Final block: pad
             size_t remaining = len - offset;
             uint8_t block[200] = {};
-            std::memcpy(block, data + offset, remaining);
+            if (remaining > 0)
+                std::memcpy(block, data + offset, remaining);
 
             // SHA-3 domain separator: 0x06, final padding bit: 0x80
             block[remaining] = 0x06;

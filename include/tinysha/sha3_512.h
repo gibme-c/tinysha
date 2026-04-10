@@ -25,6 +25,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
+// SHA3-512: NIST FIPS 202 Section 6.1
 
 #include "common.h"
 

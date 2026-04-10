@@ -119,7 +119,8 @@ namespace tinysha
         // Padding
         uint8_t block[128];
         size_t remaining = len - offset;
-        std::memcpy(block, data + offset, remaining);
+        if (remaining > 0)
+            std::memcpy(block, data + offset, remaining);
         block[remaining] = 0x80;
         remaining++;
 

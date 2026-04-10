@@ -40,3 +40,14 @@ TEST(sha3_384_nist_vectors)
         ASSERT_EQ(digest, expected);
     }
 }
+
+TEST(sha3_384_c_api)
+{
+    uint8_t out[48];
+    const uint8_t abc[] = {0x61, 0x62, 0x63};
+    int rc = tinysha_sha3_384(abc, 3, out, 48);
+    ASSERT_TRUE(rc == 0);
+    std::vector<uint8_t> result(out, out + 48);
+    std::vector<uint8_t> expected(sha3_384_vectors[1].expected, sha3_384_vectors[1].expected + 48);
+    ASSERT_EQ(result, expected);
+}

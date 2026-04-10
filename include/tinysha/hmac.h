@@ -25,6 +25,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
+// HMAC: RFC 2104 / FIPS 198-1
 
 #include "common.h"
 

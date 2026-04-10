@@ -53,8 +53,12 @@ static int pbkdf2_c_api(
         return -1;
     if (iterations == 0)
         return -1;
-    std::vector<uint8_t> pw(password, password + password_len);
-    std::vector<uint8_t> s(salt, salt + salt_len);
+    std::vector<uint8_t> pw(password_len);
+    if (password_len > 0)
+        std::memcpy(pw.data(), password, password_len);
+    std::vector<uint8_t> s(salt_len);
+    if (salt_len > 0)
+        std::memcpy(s.data(), salt, salt_len);
     auto result = tinysha::pbkdf2<T>(pw, s, iterations, dk_len);
     std::memcpy(out, result.data(), dk_len);
     tinysha::secure_zero(pw.data(), pw.size());

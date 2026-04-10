@@ -51,8 +51,12 @@ static int hmac_c_api_impl(
         return -1;
     if (!data && data_len > 0)
         return -1;
-    std::vector<uint8_t> k(key, key + key_len);
-    std::vector<uint8_t> d(data, data + data_len);
+    std::vector<uint8_t> k(key_len);
+    if (key_len > 0)
+        std::memcpy(k.data(), key, key_len);
+    std::vector<uint8_t> d(data_len);
+    if (data_len > 0)
+        std::memcpy(d.data(), data, data_len);
     auto result = fn(k, d);
     std::memcpy(out, result.data(), out_len);
     tinysha::secure_zero(k.data(), k.size());

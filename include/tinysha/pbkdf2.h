@@ -25,6 +25,7 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
+// PBKDF2: RFC 8018 Section 5.2
 
 #include "common.h"
 #include "hmac.h"
