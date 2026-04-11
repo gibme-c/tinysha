@@ -16,43 +16,51 @@ jobs:
       matrix:
         include:
           # ── Linux gcc-11 ──────────────────────────────────────────
-          - { os: ubuntu-latest, cc: gcc-11,    cxx: g++-11,      name: gcc-11,    config: portable, cmake_flags: "-DFORCE_PORTABLE=ON" }
+          - { os: ubuntu-latest, cc: gcc-11,    cxx: g++-11,      name: gcc-11,    config: portable, cmake_flags: "-DTINYSHA_FORCE_PORTABLE=ON" }
           - { os: ubuntu-latest, cc: gcc-11,    cxx: g++-11,      name: gcc-11,    config: native,   cmake_flags: "" }
 
           # ── Linux gcc-12 ──────────────────────────────────────────
-          - { os: ubuntu-latest, cc: gcc-12,    cxx: g++-12,      name: gcc-12,    config: portable, cmake_flags: "-DFORCE_PORTABLE=ON" }
+          - { os: ubuntu-latest, cc: gcc-12,    cxx: g++-12,      name: gcc-12,    config: portable, cmake_flags: "-DTINYSHA_FORCE_PORTABLE=ON" }
           - { os: ubuntu-latest, cc: gcc-12,    cxx: g++-12,      name: gcc-12,    config: native,   cmake_flags: "" }
 
           # ── Linux clang-14 ────────────────────────────────────────
-          - { os: ubuntu-latest, cc: clang-14,  cxx: clang++-14,  name: clang-14,  config: portable, cmake_flags: "-DFORCE_PORTABLE=ON" }
+          - { os: ubuntu-latest, cc: clang-14,  cxx: clang++-14,  name: clang-14,  config: portable, cmake_flags: "-DTINYSHA_FORCE_PORTABLE=ON" }
           - { os: ubuntu-latest, cc: clang-14,  cxx: clang++-14,  name: clang-14,  config: native,   cmake_flags: "" }
 
           # ── Linux clang-15 ────────────────────────────────────────
-          - { os: ubuntu-latest, cc: clang-15,  cxx: clang++-15,  name: clang-15,  config: portable, cmake_flags: "-DFORCE_PORTABLE=ON" }
+          - { os: ubuntu-latest, cc: clang-15,  cxx: clang++-15,  name: clang-15,  config: portable, cmake_flags: "-DTINYSHA_FORCE_PORTABLE=ON" }
           - { os: ubuntu-latest, cc: clang-15,  cxx: clang++-15,  name: clang-15,  config: native,   cmake_flags: "" }
 
+          # ── Linux clang-15 + ASan + UBSan (native SIMD) ───────────
+          # Full test suite under AddressSanitizer + UndefinedBehaviorSanitizer,
+          # with -fno-sanitize-recover=all so every finding aborts. Fuzzers are
+          # disabled here — they carry their own sanitizer flags and are built
+          # separately in the nightly workflow. _FORTIFY_SOURCE=2 coexists fine
+          # with ASan at runtime (disabled with a startup warning only).
+          - { os: ubuntu-latest, cc: clang-15,  cxx: clang++-15,  name: clang-15,  config: asan-ubsan, cmake_flags: "-DTINYSHA_BUILD_FUZZERS=OFF", cxxflags: "-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer -g", ldflags: "-fsanitize=address,undefined" }
+
           # ── Linux ARM64 gcc (via ubuntu-24.04-arm) ──────────────────
-          - { os: ubuntu-24.04-arm, cc: gcc,   cxx: g++,     name: gcc,   config: portable, cmake_flags: "-DFORCE_PORTABLE=ON" }
+          - { os: ubuntu-24.04-arm, cc: gcc,   cxx: g++,     name: gcc,   config: portable, cmake_flags: "-DTINYSHA_FORCE_PORTABLE=ON" }
           - { os: ubuntu-24.04-arm, cc: gcc,   cxx: g++,     name: gcc,   config: arm64,    cmake_flags: "" }
 
           # ── Linux ARM64 clang (via ubuntu-24.04-arm) ────────────────
-          - { os: ubuntu-24.04-arm, cc: clang, cxx: clang++, name: clang, config: portable, cmake_flags: "-DFORCE_PORTABLE=ON" }
+          - { os: ubuntu-24.04-arm, cc: clang, cxx: clang++, name: clang, config: portable, cmake_flags: "-DTINYSHA_FORCE_PORTABLE=ON" }
           - { os: ubuntu-24.04-arm, cc: clang, cxx: clang++, name: clang, config: arm64,    cmake_flags: "" }
 
           # ── macOS Homebrew clang (ARM64 — no x86 SIMD configs) ───
-          - { os: macos-latest, cc: /opt/homebrew/opt/llvm/bin/clang, cxx: /opt/homebrew/opt/llvm/bin/clang++, name: clang, config: portable, cmake_flags: "-DFORCE_PORTABLE=ON" }
+          - { os: macos-latest, cc: /opt/homebrew/opt/llvm/bin/clang, cxx: /opt/homebrew/opt/llvm/bin/clang++, name: clang, config: portable, cmake_flags: "-DTINYSHA_FORCE_PORTABLE=ON" }
           - { os: macos-latest, cc: /opt/homebrew/opt/llvm/bin/clang, cxx: /opt/homebrew/opt/llvm/bin/clang++, name: clang, config: arm64,    cmake_flags: "" }
 
           # ── macOS AppleClang (ARM64 — no x86 SIMD configs) ───────
-          - { os: macos-latest, name: AppleClang, config: portable, cmake_flags: "-DFORCE_PORTABLE=ON" }
+          - { os: macos-latest, name: AppleClang, config: portable, cmake_flags: "-DTINYSHA_FORCE_PORTABLE=ON" }
           - { os: macos-latest, name: AppleClang, config: arm64,    cmake_flags: "" }
 
           # ── Windows MSVC ──────────────────────────────────────────
-          - { os: windows-latest, name: msvc, config: portable, cmake_flags: "-DFORCE_PORTABLE=ON" }
+          - { os: windows-latest, name: msvc, config: portable, cmake_flags: "-DTINYSHA_FORCE_PORTABLE=ON" }
           - { os: windows-latest, name: msvc, config: native,   cmake_flags: "" }
 
           # ── Windows MinGW GCC ─────────────────────────────────────
-          - { os: windows-latest, name: mingw-gcc, config: portable, cmake_flags: "-G \"MinGW Makefiles\" -DCMAKE_CXX_COMPILER=g++ -DFORCE_PORTABLE=ON" }
+          - { os: windows-latest, name: mingw-gcc, config: portable, cmake_flags: "-G \"MinGW Makefiles\" -DCMAKE_CXX_COMPILER=g++ -DTINYSHA_FORCE_PORTABLE=ON" }
           - { os: windows-latest, name: mingw-gcc, config: native,   cmake_flags: "-G \"MinGW Makefiles\" -DCMAKE_CXX_COMPILER=g++" }
 
     name: ${{ matrix.os }} / ${{ matrix.name }} / ${{ matrix.config }}
@@ -74,7 +82,13 @@ jobs:
         env:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
-        run: cmake -S . -B build -DBUILD_TESTS=ON -DBUILD_BENCHMARKS=ON ${{ matrix.cmake_flags }}
+          # CXXFLAGS/LDFLAGS are empty for normal matrix cells and only populated
+          # on the sanitizer cell. CMake reads these at first-configure and prepends
+          # them to every compilation/link, so they apply to tinysha, tinysha_tests,
+          # and tinysha_benchmarks without needing any CMakeLists.txt plumbing.
+          CXXFLAGS: ${{ matrix.cxxflags }}
+          LDFLAGS: ${{ matrix.ldflags }}
+        run: cmake -S . -B build -DTINYSHA_BUILD_TESTS=ON -DTINYSHA_BUILD_BENCHMARKS=ON ${{ matrix.cmake_flags }}
 
       - name: Build
         run: cmake --build build --config Release -j

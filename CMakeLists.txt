@@ -3,14 +3,26 @@ project(tinysha VERSION 0.1.0 LANGUAGES CXX)
 
 include(CheckCXXCompilerFlag)
 
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+# Detect whether tinysha is the top-level project or consumed via add_subdirectory().
+# When consumed as a subdirectory, we must NOT build tests/benchmarks/fuzzers and must
+# NOT call enable_testing(), otherwise our targets leak into the parent build.
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    set(TINYSHA_IS_TOP_LEVEL TRUE)
+else()
+    set(TINYSHA_IS_TOP_LEVEL FALSE)
+endif()
+
+if(TINYSHA_IS_TOP_LEVEL AND NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
 
 option(BUILD_SHARED_LIBS "Build shared library" OFF)
-option(BUILD_TESTS "Build unit tests" OFF)
-option(BUILD_BENCHMARKS "Build benchmarks" OFF)
-option(FORCE_PORTABLE "Disable SIMD backends; use only portable code" OFF)
+# Prefix tinysha-specific options so they don't collide with parent-project options
+# of the same name. Default to ON only when tinysha is the top-level project.
+option(TINYSHA_BUILD_TESTS "Build tinysha unit tests" ${TINYSHA_IS_TOP_LEVEL})
+option(TINYSHA_BUILD_BENCHMARKS "Build tinysha benchmarks" ${TINYSHA_IS_TOP_LEVEL})
+option(TINYSHA_BUILD_FUZZERS "Build tinysha libFuzzer targets (Clang+Linux only)" ${TINYSHA_IS_TOP_LEVEL})
+option(TINYSHA_FORCE_PORTABLE "Disable SIMD backends; use only portable code" OFF)
 
 # --- Library sources ---
 set(TINYSHA_SOURCES
@@ -29,7 +41,7 @@ set(TINYSHA_SOURCES
 )
 
 # Conditionally add SIMD backend sources on x86_64
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64" AND NOT FORCE_PORTABLE)
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64" AND NOT TINYSHA_FORCE_PORTABLE)
     list(APPEND TINYSHA_SOURCES
         src/backend/sha2_x64.cpp
         src/backend/sha2_avx2.cpp
@@ -42,7 +54,7 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64" AND NOT FORCE_PORTABLE)
 endif()
 
 # Conditionally add ARM64 crypto extension backend sources
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64" AND NOT FORCE_PORTABLE)
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64" AND NOT TINYSHA_FORCE_PORTABLE)
     list(APPEND TINYSHA_SOURCES
         src/backend/sha2_arm_ce.cpp
         src/backend/keccak_arm_ce.cpp
@@ -61,7 +73,7 @@ if(BUILD_SHARED_LIBS)
     target_compile_definitions(tinysha PRIVATE TINYSHA_BUILDING=1)
 endif()
 
-if(FORCE_PORTABLE)
+if(TINYSHA_FORCE_PORTABLE)
     target_compile_definitions(tinysha PUBLIC TINYSHA_FORCE_PORTABLE=1)
 endif()
 
@@ -174,7 +186,7 @@ elseif(MSVC)
 endif()
 
 # --- Per-backend SIMD compile flags ---
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64" AND NOT FORCE_PORTABLE)
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64" AND NOT TINYSHA_FORCE_PORTABLE)
     # MinGW GCC + Debug: Windows x64 ABI only guarantees 16-byte stack alignment,
     # but YMM/ZMM registers need 32/64-byte alignment. At -O0, GCC spills AVX
     # registers to the stack with aligned moves (vmovdqa), which SIGSEGV on the
@@ -211,7 +223,7 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64" AND NOT FORCE_PORTABLE)
 endif()
 
 # --- Per-backend ARM64 crypto extension compile flags ---
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64" AND NOT FORCE_PORTABLE)
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64" AND NOT TINYSHA_FORCE_PORTABLE)
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         set_source_files_properties(src/backend/sha2_arm_ce.cpp PROPERTIES
             COMPILE_FLAGS "-march=armv8.2-a+crypto+sha3")
@@ -222,17 +234,21 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64" AND NOT FORCE_PORTABLE)
 endif()
 
 # --- Tests ---
-if(BUILD_TESTS)
-    enable_testing()
+# Only call enable_testing() when tinysha is top-level; otherwise the parent
+# project owns CTest configuration and we must not touch it.
+if(TINYSHA_BUILD_TESTS)
+    if(TINYSHA_IS_TOP_LEVEL)
+        enable_testing()
+    endif()
     add_subdirectory(tests)
 endif()
 
 # --- Benchmarks ---
-if(BUILD_BENCHMARKS)
+if(TINYSHA_BUILD_BENCHMARKS)
     add_subdirectory(bench)
 endif()
 
 # --- Fuzzing (Clang only) ---
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+if(TINYSHA_BUILD_FUZZERS AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_subdirectory(fuzz)
 endif()

@@ -55,7 +55,7 @@ Requires CMake 3.10+ and a C++17 compiler.
 
 ```bash
 # Configure and build
-cmake -S . -B build -DBUILD_TESTS=ON
+cmake -S . -B build -DTINYSHA_BUILD_TESTS=ON
 cmake --build build --config Release -j
 
 # Run tests
@@ -67,10 +67,11 @@ cmake --build build --config Release -j
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `BUILD_TESTS` | `OFF` | Build the unit test executable (`tinysha_tests`) |
-| `BUILD_BENCHMARKS` | `OFF` | Build the benchmark tool (`tinysha_benchmarks`) |
+| `TINYSHA_BUILD_TESTS` | `ON` top-level, `OFF` as subdirectory | Build the unit test executable (`tinysha_tests`) |
+| `TINYSHA_BUILD_BENCHMARKS` | `ON` top-level, `OFF` as subdirectory | Build the benchmark tool (`tinysha_benchmarks`) |
+| `TINYSHA_BUILD_FUZZERS` | `ON` top-level, `OFF` as subdirectory | Build libFuzzer targets (Clang + Linux only) |
 | `BUILD_SHARED_LIBS` | `OFF` | Build as a shared library (`.so`/`.dll`/`.dylib`) |
-| `FORCE_PORTABLE` | `OFF` | Disable all SIMD backends; use only portable C++ code |
+| `TINYSHA_FORCE_PORTABLE` | `OFF` | Disable all SIMD backends; use only portable C++ code |
 | `CMAKE_BUILD_TYPE` | `Release` | `Debug`, `Release`, or `RelWithDebInfo` |
 
 ## Usage
@@ -204,7 +205,7 @@ All intermediate buffers — key blocks, ipad, opad, HMAC intermediates, PBKDF2 
 
 ## Testing
 
-Build with `-DBUILD_TESTS=ON` to get the `tinysha_tests` executable. The test suite covers:
+Build with `-DTINYSHA_BUILD_TESTS=ON` to get the `tinysha_tests` executable. The test suite covers:
 
 - **Known-answer tests** — NIST test vectors for all six hash algorithms (empty string, short messages, standard reference inputs)
 - **HMAC test vectors** — RFC 4231 vectors for HMAC-SHA-256/384/512, plus SHA-3 HMAC vectors
@@ -216,7 +217,7 @@ The test harness is a custom header-only framework (`test_harness.h`) with `TEST
 
 ## Benchmarking
 
-Build with `-DBUILD_BENCHMARKS=ON` to get the `tinysha_benchmarks` executable. This benchmarks each hash, HMAC, and PBKDF2 variant, plus individual backend compression functions where dispatch allows direct access.
+Build with `-DTINYSHA_BUILD_BENCHMARKS=ON` to get the `tinysha_benchmarks` executable. This benchmarks each hash, HMAC, and PBKDF2 variant, plus individual backend compression functions where dispatch allows direct access.
 
 ## Fuzzing
 

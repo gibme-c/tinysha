@@ -43,11 +43,18 @@ foreach(target ${FUZZ_TARGETS})
         ${CMAKE_CURRENT_SOURCE_DIR}/../src
         ${CMAKE_CURRENT_SOURCE_DIR}
     )
+    # Sanitizer stack: libFuzzer (coverage-guided driver) + ASan (memory safety)
+    # + UBSan (undefined behavior). -fno-sanitize-recover=all turns every UBSan
+    # finding into an immediate abort, which is what libFuzzer treats as a bug.
     target_compile_options(${target} PRIVATE
         -Wall -Wextra -Wpedantic -Werror
-        -fsanitize=fuzzer,address
+        -fsanitize=fuzzer,address,undefined
+        -fno-sanitize-recover=all
+        -fno-omit-frame-pointer
+        -g
     )
-    set_property(TARGET ${target} APPEND_STRING PROPERTY LINK_FLAGS " -fsanitize=fuzzer,address")
+    set_property(TARGET ${target} APPEND_STRING PROPERTY LINK_FLAGS
+        " -fsanitize=fuzzer,address,undefined")
     if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         set_property(TARGET ${target} APPEND_STRING PROPERTY LINK_FLAGS
             " -Wl,-z,relro,-z,now -Wl,-z,noexecstack")
