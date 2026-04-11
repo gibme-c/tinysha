@@ -104,8 +104,13 @@ namespace tinysha
             std::memcpy(k_block.data(), hashed.data(), digest_size);
             secure_zero(hashed.data(), hashed.size());
         }
-        else
+        else if (!key.empty())
         {
+            // Guard against empty key: std::vector<T>::data() may return
+            // nullptr for empty vectors, and memcpy(dst, nullptr, 0) violates
+            // the nonnull attribute on memcpy's source parameter (UBSan
+            // finding). The k_block constructor already zero-initialized
+            // the buffer, so an empty key correctly produces the zero block.
             std::memcpy(k_block.data(), key.data(), key.size());
         }
 
